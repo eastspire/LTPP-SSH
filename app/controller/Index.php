@@ -2,8 +2,8 @@
 /*
  * @Author: 18855190718 1491579574@qq.com
  * @Date: 2023-07-09 20:33:57
- * @LastEditors: 18855190718 1491579574@qq.com
- * @LastEditTime: 2023-09-15 23:25:16
+ * @LastEditors: wmzn-ltpp 1491579574@qq.com
+ * @LastEditTime: 2023-10-14 13:45:57
  * @FilePath: \LTPP-SSH\app\controller\Index.php
  * @Description: Email:1491579574@qq.com
  * QQ:1491579574
@@ -114,7 +114,7 @@ class Index
      * @param string $email_mail_name 邮箱服务器用户
      * @param string $email_mail_password 邮箱服务器密码
      */
-    private function creat($port = 0, $password = '', $email = '', $email_url = '', $email_mail_name = '', $email_mail_password = '')
+    private function creat($port = 0, $password = '')
     {
         if (!$port || $port < Index::$begin_port || $port >= (Index::$begin_port + Index::$max_num)) {
             return [
@@ -124,15 +124,15 @@ class Index
             ];
         }
         try {
-            if ($this->judgePortIsUse($port)) {
+            if ($this->judgePortIsUse($port) || $this->judgePortIsUse($port + 1)) {
                 return [
                     'code' => 0,
                     'title' => Index::$title,
                     'content' => Index::$port_already_in_use_msg
                 ];
             }
-            $shell = "echo -e '$password\\n$password' | sudo passwd ltpp && sudo service ssh restart && tail -f /dev/null";
-            $docker_cmd = 'docker run -itd -p ' . $port . ':22 --privileged=true --restart=always --shm-size 2g --cpus=0.5 ccr.ccs.tencentyun.com/linux_environment/debian:1.0.0 /bin/bash -c "' . $shell . '" 2>&1';
+            $shell = "echo -e '$password\\n$password' | sudo passwd ltpp;sudo service ssh restart;rm -rf /path;mkdir -p /path/to;touch /path/to/config.yaml;echo password: $password >> /path/to/config.yaml;nohup code-server --bind-addr=0.0.0.0:80 --config /path/to/config.yaml > /dev/null 2>&1 & tail -f /dev/null";
+            $docker_cmd = 'docker run -itd -p ' . $port . ':22 -p ' . ($port + 1) . ':80 --privileged=true --storage-opt size=60GB --restart=always --shm-size 2g --cpus=0.5 ccr.ccs.tencentyun.com/linux_environment/debian:1.0.0 /bin/bash -c "' . $shell . '" 2>&1';
             exec($docker_cmd, $out);
             if (empty($out) || sizeof($out) != 1 || !$this->isEnglishAlphabet($out[0])) {
                 return [
@@ -184,17 +184,14 @@ class Index
         $user_id = (int) $request->post('user_id');
         $port = (int) $request->post('port');
         $password = $request->post('password');
-        $email = $request->post('email');
-        $email_url = $request->post('email_url');
-        $email_mail_name = $request->post('email_mail_name');
-        $email_mail_password = $request->post('email_mail_password');
         if (
-            !$user_id || !is_numeric($user_id) || !$port || !is_numeric($port) ||
-            !$password || !$email || !$email_url || !$email_mail_name || !$email_mail_password
+            !$user_id || !is_numeric($user_id) ||
+            !$port || !is_numeric($port) ||
+            !$password
         ) {
             return json(['code' => -1, 'title' => Index::$title, 'content' => Index::$parameter_error_msg]);
         }
-        $res = $this->creat($port, $password, $email, $email_url, $email_mail_name, $email_mail_password);
+        $res = $this->creat($port, $password);
         return json($res);
     }
 }
