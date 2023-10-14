@@ -3,7 +3,7 @@
  * @Author: 18855190718 1491579574@qq.com
  * @Date: 2023-07-09 20:33:57
  * @LastEditors: wmzn-ltpp 1491579574@qq.com
- * @LastEditTime: 2023-10-14 13:45:57
+ * @LastEditTime: 2023-10-14 14:30:49
  * @FilePath: \LTPP-SSH\app\controller\Index.php
  * @Description: Email:1491579574@qq.com
  * QQ:1491579574
@@ -132,7 +132,7 @@ class Index
                 ];
             }
             $shell = "echo -e '$password\\n$password' | sudo passwd ltpp;sudo service ssh restart;rm -rf /path;mkdir -p /path/to;touch /path/to/config.yaml;echo password: $password >> /path/to/config.yaml;nohup code-server --bind-addr=0.0.0.0:80 --config /path/to/config.yaml > /dev/null 2>&1 & tail -f /dev/null";
-            $docker_cmd = 'docker run -itd -p ' . $port . ':22 -p ' . ($port + 1) . ':80 --privileged=true --storage-opt size=60GB --restart=always --shm-size 2g --cpus=0.5 ccr.ccs.tencentyun.com/linux_environment/debian:1.0.0 /bin/bash -c "' . $shell . '" 2>&1';
+            $docker_cmd = 'docker run -itd -p ' . $port . ':22 -p ' . ($port + 1) . ':80 --privileged=true --restart=always --shm-size 4g --cpus=0.5 ccr.ccs.tencentyun.com/linux_environment/debian:1.0.0 /bin/bash -c "' . $shell . '" 2>&1';
             exec($docker_cmd, $out);
             if (empty($out) || sizeof($out) != 1 || !$this->isEnglishAlphabet($out[0])) {
                 return [
