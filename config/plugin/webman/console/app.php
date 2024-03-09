@@ -6,7 +6,7 @@ return [
 
     'phar_filename' => 'LTPP-SSH.phar',
 
-    'bin_filename' => 'LTPP-SSH.bin',
+    'bin_filename' => 'LTPP-SSH',
 
     'signature_algorithm' => Phar::SHA256,
     //set the signature algorithm for a phar and apply it. The signature algorithm must be one of Phar::MD5, Phar::SHA1, Phar::SHA256, Phar::SHA512, or Phar::OPENSSL.
@@ -23,6 +23,6 @@ return [
         'composer.lock',
         'start.php',
         'LTPP-SSH.phar',
-        'LTPP-SSH.bin'
+        'LTPP-SSH'
     ]
 ];
