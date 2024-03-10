@@ -1,5 +1,5 @@
 <?php
-ini_set('memory_limit', '102400M');
+ini_set('memory_limit', '10240M');
 /**
  * Here is your custom functions.
  */

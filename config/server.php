@@ -9,6 +9,7 @@
  * QQ:1491579574
  * Copyright (c) 2023 by SQS, All Rights Reserved. 
  */
+
 /**
  * This file is part of ssh.
  *
@@ -27,7 +28,7 @@ return [
     'transport' => 'tcp',
     'context' => [],
     'name' => 'ssh',
-    'count' => (cpu_count() > 4 ? 4 : cpu_count()) * 2,
+    'count' => (cpu_count() > 2 ? 2 : cpu_count()) * 2,
     'user' => '',
     'group' => '',
     'reusePort' => false,

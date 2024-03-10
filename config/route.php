@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of webman.
  *
@@ -13,9 +14,20 @@
  */
 
 use Webman\Route;
+use Webman\Http\Request;
+use app\controller\Index;
 
-
-
-
-
-
+Route::fallback(function (Request $request) {
+    $path = $request->path();
+    $res = json_encode(
+        ['code' => -1, 'title' => Index::$title, 'content' => Index::$parameter_error_msg],
+        JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
+    );
+    return response($res, 200, [
+        'Content-Type' => 'application/json;charset=utf-8',
+        'Accept-Ranges' => 'bytes',
+        'Content-Length' => strlen($res),
+        'File-Content-Type' => 'application/json;charset=utf-8',
+        'File-Path' => $path,
+    ]);
+});

@@ -48,6 +48,12 @@ class Index
     static $failed_to_create_or_run_service_msg = '服务创建/运行失败！';
 
     /**
+     * 服务运行异常
+     * @var string $failed_to_create_or_run_service_msg
+     */
+    static $server_error = '服务运行异常！';
+
+    /**
      * 服务创建/运行失败最大重新检测次数
      * @var int $failed_to_create_or_run_max_check_times
      */
@@ -132,7 +138,7 @@ class Index
                 ];
             }
             $shell = "echo -e '$password\\n$password' | sudo passwd ltpp;sudo service ssh restart;rm -rf /path;mkdir -p /path/to;touch /path/to/config.yaml;echo password: $password >> /path/to/config.yaml;nohup code-server --bind-addr=0.0.0.0:80 --config /path/to/config.yaml > /dev/null 2>&1 & tail -f /dev/null";
-            $docker_cmd = 'docker run -itd -p ' . $port . ':22 -p ' . ($port + 1) . ':80 --restart=always --shm-size 2g --cpus=0.2 ccr.ccs.tencentyun.com/linux_environment/debian:1.0.0 /bin/bash -c "' . $shell . '" 2>&1';
+            $docker_cmd = 'docker run -itd -p ' . $port . ':22 -p ' . ($port + 1) . ':80 --restart=always --shm-size 1g --memory=2g --cpus=0.2 ccr.ccs.tencentyun.com/linux_environment/debian:1.0.0 /bin/bash -c "' . $shell . '" 2>&1';
             exec($docker_cmd, $out);
             if (empty($out) || sizeof($out) != 1 || !$this->isEnglishAlphabet($out[0])) {
                 return [
@@ -141,7 +147,6 @@ class Index
                     'content' => Index::$failed_to_create_service_msg
                 ];
             }
-
             // 容器运行检测
             $is_fail = false;
             $times = 0;
