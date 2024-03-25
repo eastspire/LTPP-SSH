@@ -114,15 +114,17 @@ class Index
      * 创建SSH
      * @param int $port
      * @param string $password
-     * @param string $email
+     * @param int $port_num
      * @return array $res
-     * @param string $email_url 邮箱服务器地址
-     * @param string $email_mail_name 邮箱服务器用户
-     * @param string $email_mail_password 邮箱服务器密码
      */
-    private function creat($port = 0, $password = '')
+    private function creat($port = 0, $password = '', $port_num)
     {
-        if (!$port || $port < Index::$begin_port || $port >= (Index::$begin_port + Index::$max_num)) {
+        if (
+            !$port ||
+            $port < Index::$begin_port ||
+            $port >= (Index::$begin_port + Index::$max_num) ||
+            $port_num <= 0
+        ) {
             return [
                 'code' => -1,
                 'title' => Index::$title,
@@ -130,15 +132,18 @@ class Index
             ];
         }
         try {
-            if ($this->judgePortIsUse($port) || $this->judgePortIsUse($port + 1)) {
-                return [
-                    'code' => 0,
-                    'title' => Index::$title,
-                    'content' => Index::$port_already_in_use_msg
-                ];
+            for ($i = $port; $i < $port + $port_num; ++$i) {
+                if ($this->judgePortIsUse($i)) {
+                    return [
+                        'code' => 0,
+                        'title' => Index::$title,
+                        'content' => Index::$port_already_in_use_msg
+                    ];
+                }
             }
+            $end_port =  max($port + 2, $port + $port_num - 1);
             $shell = "echo -e '$password\\n$password' | sudo passwd ltpp;sudo service ssh restart;rm -rf /path;mkdir -p /path/to;touch /path/to/config.yaml;echo password: $password >> /path/to/config.yaml;nohup code-server --bind-addr=0.0.0.0:80 --config /path/to/config.yaml > /dev/null 2>&1 & tail -f /dev/null";
-            $docker_cmd = 'docker run -itd -p ' . $port . ':22 -p ' . ($port + 1) . ':80 --restart=always --shm-size 1g --memory=2g --cpus=0.2 ccr.ccs.tencentyun.com/linux_environment/debian:1.0.0 /bin/bash -c "' . $shell . '" 2>&1';
+            $docker_cmd = 'docker run -itd -p ' . $port . ':22 -p ' . ($port + 1) . ':80 -p ' . ($port + 2) . '-' . $end_port . ':' .  ($port + 2) . '-' . $end_port . ' --restart=always --shm-size 1g --memory=2g --cpus=0.2 ccr.ccs.tencentyun.com/linux_environment/debian:1.0.0 /bin/bash -c "' . $shell . '" 2>&1';
             exec($docker_cmd, $out);
             if (empty($out) || sizeof($out) != 1 || !$this->isEnglishAlphabet($out[0])) {
                 return [
@@ -172,7 +177,6 @@ class Index
                 'content' => Index::$failed_to_create_or_run_service_msg . "\n" . $e->getMessage()
             ];
         }
-
         return [
             'code' => 1,
             'title' => Index::$title,
@@ -189,14 +193,15 @@ class Index
         $user_id = (int) $request->post('user_id');
         $port = (int) $request->post('port');
         $password = $request->post('password');
+        $port_num = (int)$request->post('port_num');
         if (
             !$user_id || !is_numeric($user_id) ||
             !$port || !is_numeric($port) ||
-            !$password
+            !$password || !$port_num || !is_numeric($port_num)
         ) {
             return json(['code' => -1, 'title' => Index::$title, 'content' => Index::$parameter_error_msg]);
         }
-        $res = $this->creat($port, $password);
+        $res = $this->creat($port, $password, $port_num);
         return json($res);
     }
 }
