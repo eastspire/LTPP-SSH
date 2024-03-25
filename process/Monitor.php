@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of webman.
  *
@@ -127,7 +128,7 @@ class Monitor
         }
         $count = 0;
         foreach ($iterator as $file) {
-            $count ++;
+            $count++;
             /** var SplFileInfo $file */
             if (is_dir($file->getRealPath())) {
                 continue;
@@ -135,7 +136,7 @@ class Monitor
             // check mtime
             if (in_array($file->getExtension(), $this->extensions, true) && $lastMtime < $file->getMTime()) {
                 $var = 0;
-                exec('"'.PHP_BINARY . '" -l ' . $file, $out, $var);
+                exec('"' . PHP_BINARY . '" -l ' . $file, $out, $var);
                 $lastMtime = $file->getMTime();
                 if ($var) {
                     continue;

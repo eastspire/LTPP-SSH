@@ -23,12 +23,14 @@
  * @license   http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
+use app\controller\Index;
+
 return [
     'listen' => 'http://0.0.0.0:49999',
     'transport' => 'tcp',
     'context' => [],
-    'name' => 'ssh',
-    'count' => (cpu_count() > 2 ? 2 : cpu_count()) * 2,
+    'name' =>  Index::$app_name,
+    'count' => 1,
     'user' => '',
     'group' => '',
     'reusePort' => false,

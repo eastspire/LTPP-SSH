@@ -18,6 +18,11 @@ use support\Request;
 class Index
 {
     /**
+     * APP名称
+     */
+    static $app_name = 'LTPP-SSH';
+
+    /**
      * 参数错误信息
      * @var string $parameter_error_msg
      */
@@ -36,6 +41,12 @@ class Index
     static $port_already_in_use_msg = '端口已占用！';
 
     /**
+     *  服务创建成功
+     * @var string $success_to_create_service_msg
+     */
+    static $success_to_create_service_msg = '服务创建成功！';
+
+    /**
      *  服务创建失败
      * @var string $failed_to_create_service_msg
      */
@@ -49,7 +60,7 @@ class Index
 
     /**
      * 服务运行异常
-     * @var string $failed_to_create_or_run_service_msg
+     * @var string $server_error
      */
     static $server_error = '服务运行异常！';
 
@@ -57,25 +68,18 @@ class Index
      * 服务创建/运行失败最大重新检测次数
      * @var int $failed_to_create_or_run_max_check_times
      */
-    static $failed_to_create_or_run_max_check_times = 6;
+    static $failed_to_create_or_run_max_check_times = 36;
+
+    /**
+     * 等待时间
+     */
+    static $wait_time = 8;
 
     /**
      * SSH通知标题
      * @var int $title
      */
     static $title = 'LTPP-SSH创建结果通知';
-
-    /**
-     * SSH最大限制
-     * @var int $max_num
-     */
-    static $max_num = 36;
-
-    /**
-     * SSH起始端口
-     * @var int $begin_port
-     */
-    static $begin_port = 50000;
 
     /**
      * 判断端口是否占用
@@ -103,14 +107,6 @@ class Index
     }
 
     /**
-     * 判断是否只包含数字和字母
-     */
-    private function isEnglishAlphabet($str)
-    {
-        return preg_match('/^[a-zA-Z0-9]+$/', $str);
-    }
-
-    /**
      * 创建SSH
      * @param int $port
      * @param string $password
@@ -119,18 +115,6 @@ class Index
      */
     private function creat($port = 0, $password = '', $port_num)
     {
-        if (
-            !$port ||
-            $port < Index::$begin_port ||
-            $port >= (Index::$begin_port + Index::$max_num) ||
-            $port_num <= 0
-        ) {
-            return [
-                'code' => -1,
-                'title' => Index::$title,
-                'content' => Index::$port_error_msg
-            ];
-        }
         try {
             for ($i = $port; $i < $port + $port_num; ++$i) {
                 if ($this->judgePortIsUse($i)) {
@@ -145,31 +129,6 @@ class Index
             $shell = "echo -e '$password\\n$password' | sudo passwd ltpp;sudo service ssh restart;rm -rf /path;mkdir -p /path/to;touch /path/to/config.yaml;echo password: $password >> /path/to/config.yaml;nohup code-server --bind-addr=0.0.0.0:80 --config /path/to/config.yaml > /dev/null 2>&1 & tail -f /dev/null";
             $docker_cmd = 'docker run -itd -p ' . $port . ':22 -p ' . ($port + 1) . ':80 -p ' . ($port + 2) . '-' . $end_port . ':' .  ($port + 2) . '-' . $end_port . ' --restart=always --shm-size 1g --memory=2g --cpus=0.2 ccr.ccs.tencentyun.com/linux_environment/debian:1.0.0 /bin/bash -c "' . $shell . '" 2>&1';
             exec($docker_cmd, $out);
-            if (empty($out) || sizeof($out) != 1 || !$this->isEnglishAlphabet($out[0])) {
-                return [
-                    'code' => -1,
-                    'title' => Index::$title,
-                    'content' => Index::$failed_to_create_service_msg
-                ];
-            }
-            // 容器运行检测
-            $is_fail = false;
-            $times = 0;
-            while (!$this->judgePortIsUse($port)) {
-                if ($times >= Index::$failed_to_create_or_run_max_check_times) {
-                    $is_fail = true;
-                    break;
-                }
-                ++$times;
-                sleep(1);
-            }
-            if ($is_fail) {
-                return [
-                    'code' => -1,
-                    'title' => Index::$title,
-                    'content' => Index::$failed_to_create_or_run_service_msg
-                ];
-            }
         } catch (Exception $e) {
             return [
                 'code' => -1,
@@ -180,7 +139,7 @@ class Index
         return [
             'code' => 1,
             'title' => Index::$title,
-            'port' => $port
+            'content' => Index::$success_to_create_service_msg
         ];
     }
 
@@ -196,10 +155,14 @@ class Index
         $port_num = (int)$request->post('port_num');
         if (
             !$user_id || !is_numeric($user_id) ||
-            !$port || !is_numeric($port) ||
+            !$port || !is_numeric($port) || $port <= 0 ||
             !$password || !$port_num || !is_numeric($port_num)
         ) {
-            return json(['code' => -1, 'title' => Index::$title, 'content' => Index::$parameter_error_msg]);
+            return json([
+                'code' => -1,
+                'title' => Index::$title,
+                'content' => Index::$parameter_error_msg
+            ]);
         }
         $res = $this->creat($port, $password, $port_num);
         return json($res);

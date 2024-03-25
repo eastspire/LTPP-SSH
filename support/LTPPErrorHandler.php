@@ -6,7 +6,6 @@ use Throwable;
 use Webman\Exception\ExceptionHandler;
 use Webman\Http\Request;
 use Webman\Http\Response;
-use app\controller\Base;
 use support\exception\BusinessException;
 use app\controller\Index;
 
