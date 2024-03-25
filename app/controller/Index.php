@@ -125,9 +125,10 @@ class Index
                     ];
                 }
             }
-            $end_port =  max($port + 2, $port + $port_num - 1);
+            $begin_port = $port + 1;
+            $end_port =  max($port + 1, $port + $port_num - 1);
             $shell = "echo -e '$password\\n$password' | sudo passwd ltpp;sudo service ssh restart;rm -rf /path;mkdir -p /path/to;touch /path/to/config.yaml;echo password: $password >> /path/to/config.yaml;nohup code-server --bind-addr=0.0.0.0:80 --config /path/to/config.yaml > /dev/null 2>&1 & tail -f /dev/null";
-            $docker_cmd = 'docker run -itd -p ' . $port . ':22 -p ' . ($port + 1) . ':80 -p ' . ($port + 2) . '-' . $end_port . ':' .  ($port + 2) . '-' . $end_port . ' --restart=always --shm-size 1g --memory=2g --cpus=0.2 ccr.ccs.tencentyun.com/linux_environment/debian:1.0.0 /bin/bash -c "' . $shell . '" 2>&1';
+            $docker_cmd = 'docker run -itd -p ' . $port . ':22 -p ' . ($port + 1) . ':80 -p ' . $begin_port . '-' . $end_port . ':' .  $begin_port . '-' . $end_port . ' --restart=always --memory=2g --cpus=0.2 ccr.ccs.tencentyun.com/linux_environment/debian:1.0.0 /bin/bash -c "' . $shell . '" 2>&1';
             exec($docker_cmd, $out);
         } catch (Exception $e) {
             return [
@@ -149,14 +150,13 @@ class Index
      */
     public function index(Request $request)
     {
-        $user_id = (int) $request->post('user_id');
         $port = (int) $request->post('port');
         $password = $request->post('password');
         $port_num = (int)$request->post('port_num');
         if (
-            !$user_id || !is_numeric($user_id) ||
             !$port || !is_numeric($port) || $port <= 0 ||
-            !$password || !$port_num || !is_numeric($port_num)
+            !$password ||
+            !$port_num || !is_numeric($port_num) || $port_num < 2
         ) {
             return json([
                 'code' => -1,
