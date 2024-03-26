@@ -25,40 +25,21 @@ class LTPPErrorHandler extends ExceptionHandler
 
     public function render(Request $request, Throwable $exception): Response
     {
-        $res = '';
-        $path = '';
+        $json = [];
         try {
             if (($exception instanceof BusinessException) && ($response = $exception->render($request))) {
                 return $response;
             }
-            if ($request->expectsJson()) {
-                $json = ['code' => -1, 'title' => Index::$title, 'content' => Index::$server_error];
-                $this->debug && $json['traces'] = (string)$exception;
-                return new Response(
-                    200,
-                    ['Content-Type' => 'application/json'],
-                    json_encode(
-                        $json,
-                        JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
-                    )
-                );
-            }
-            if ($this->debug) {
-                return new Response(200, [], nl2br((string)$exception));
-            }
-            $path = $request->path();
-            $res = json_encode(
-                ['code' => -1, 'title' => Index::$title, 'content' => Index::$parameter_error_msg],
-                JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
-            );
+            $json = ['code' => -1, 'title' => Index::$title, 'content' => Index::$server_error];
         } catch (Throwable $e) {
         }
-        return response($res, 200, [
-            'Content-Type' => 'application/json;charset=utf-8',
-            'Accept-Ranges' => 'bytes',
-            'Content-Length' => strlen($res),
-            'File-Content-Type' => 'application/json;charset=utf-8',
-            'File-Path' => $path,
-        ]);
+        return new Response(
+            200,
+            ['Content-Type' => 'application/json'],
+            json_encode(
+                $json,
+                JSON_UNESCAPED_UNICODE  | JSON_UNESCAPED_SLASHES
+            )
+        );
     }
 }
