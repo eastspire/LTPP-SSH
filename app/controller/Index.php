@@ -115,10 +115,10 @@ class Index
             if ($socket) {
                 // 端口被占用
                 $res = true;
-                fclose($socket);
             } else {
                 $res = false;
             }
+            @fclose($socket);
         } catch (Exception $e) {
             return $res;
         }
