@@ -12,7 +12,6 @@
 
 namespace app\controller;
 
-use Exception;
 use support\Request;
 
 class Index
@@ -36,49 +35,43 @@ class Index
      * 参数错误信息
      * @var string $parameter_error_msg
      */
-    static $parameter_error_msg = '参数错误！';
+    static $parameter_error_msg = '【LTPP-SSH】参数错误！';
 
     /**
      * 端口错误信息
      * @var string $port_error_msg
      */
-    static $port_error_msg = '端口错误！';
+    static $port_error_msg = '【LTPP-SSH】端口错误！';
 
     /**
      * 端口已占用错误信息
      * @var string $port_already_in_use_msg
      */
-    static $port_already_in_use_msg = '端口已占用！';
+    static $port_already_in_use_msg = '【LTPP-SSH】端口已占用！';
 
     /**
      *  服务创建成功
      * @var string $success_to_create_service_msg
      */
-    static $success_to_create_service_msg = '服务创建成功！';
+    static $success_to_create_service_msg = '【LTPP-SSH】服务创建成功！';
 
     /**
      *  服务创建失败
      * @var string $failed_to_create_service_msg
      */
-    static $failed_to_create_service_msg = '服务创建失败！';
+    static $failed_to_create_service_msg = '【LTPP-SSH】服务创建失败！';
 
     /**
      * 服务创建/运行失败
      * @var string $failed_to_create_or_run_service_msg
      */
-    static $failed_to_create_or_run_service_msg = '服务创建/运行失败！';
+    static $failed_to_create_or_run_service_msg = '【LTPP-SSH】服务创建/运行失败！';
 
     /**
      * 服务运行异常
      * @var string $server_error
      */
-    static $server_error = '服务运行异常！';
-
-    /**
-     * 服务创建/运行失败最大重新检测次数
-     * @var int $failed_to_create_or_run_max_check_times
-     */
-    static $failed_to_create_or_run_max_check_times = 36;
+    static $server_error = '【LTPP-SSH】服务运行异常！';
 
     /**
      * 等待时间
@@ -89,7 +82,7 @@ class Index
      * SSH通知标题
      * @var int $title
      */
-    static $title = 'LTPP-SSH创建结果通知';
+    static $title = '【LTPP-SSH】创建结果通知';
 
     /**
      * 判断是否只包含数字和字母
@@ -99,90 +92,38 @@ class Index
         return preg_match('/^[a-zA-Z0-9]+$/', $str);
     }
 
-
-    /**
-     * 判断端口是否占用
-     * @param int $port
-     * @return bool $res
-     */
-    public function judgePortIsUse($port = 0)
-    {
-        $res = false;
-        $errno = null;
-        $errstr = null;
-        try {
-            $socket = @fsockopen('127.0.0.1', $port, $errno, $errstr, 1);
-            if ($socket) {
-                // 端口被占用
-                $res = true;
-            } else {
-                $res = false;
-            }
-            @fclose($socket);
-        } catch (Exception $e) {
-            return $res;
-        }
-        return $res;
-    }
-
     /**
      * 创建SSH
      * @param int $port
      * @param string $password
      * @param int $port_num
+     * @param string $name
      * @return array $res
      */
-    private function creat($port = 0, $password = '', $port_num = 2)
+    private function creat($port = 0, $password = '', $port_num = 2, $name = '')
     {
-        try {
-            for ($i = $port; $i < $port + $port_num; ++$i) {
-                if ($i < Index::$start_port || $i > Index::$end_port) {
-                    return [
-                        'code' => -1,
-                        'title' => Index::$title,
-                        'content' => Index::$port_error_msg
-                    ];
-                }
-                if ($this->judgePortIsUse($i)) {
-                    return [
-                        'code' => 0,
-                        'title' => Index::$title,
-                        'content' => Index::$port_already_in_use_msg
-                    ];
-                }
-            }
-            $begin_port = $port;
-            $code_sever_port = $port + 1;
-            $no_use_port_begin = $port + 2;
-            $no_use_end_port =  max($code_sever_port, $port + $port_num - 1);
-            $shell = "echo -e '$password\\n$password' | sudo passwd ltpp;sudo service ssh restart;rm -rf /path;mkdir -p /path/to;touch /path/to/config.yaml;echo password: $password >> /path/to/config.yaml;nohup code-server --bind-addr=0.0.0.0:80 --config /path/to/config.yaml > /dev/null 2>&1 & tail -f /dev/null";
-            $docker_cmd = 'docker run --rm -itd -p ' . $begin_port . ':22 -p ' . $code_sever_port . ':80 -p ' . $no_use_port_begin . '-' . $no_use_end_port . ':' .  $no_use_port_begin . '-' . $no_use_end_port . ' --restart=always --memory=2g --cpus=0.2 ccr.ccs.tencentyun.com/linux_environment/debian:1.0.0 /bin/bash -c "' . $shell . '" 2>&1';
-            exec($docker_cmd, $out);
-            if (empty($out) || sizeof($out) != 1 || !$this->isEnglishAlphabet($out[0])) {
+        for ($i = $port; $i < $port + $port_num; ++$i) {
+            if ($i < Index::$start_port || $i > Index::$end_port) {
                 return [
-                    'code' => 0,
+                    'code' => -1,
                     'title' => Index::$title,
-                    'content' => Index::$failed_to_create_service_msg
+                    'content' => Index::$port_error_msg
                 ];
             }
-            $is_success = false;
-            for ($i = $port; $i < $port + $port_num; ++$i) {
-                if ($this->judgePortIsUse($i)) {
-                    $is_success = true;
-                }
-            }
-            if (!$is_success) {
-                return [
-                    'code' => 0,
-                    'title' => Index::$title,
-                    'content' => Index::$failed_to_create_or_run_service_msg
-                ];
-            }
-        } catch (Exception $e) {
+        }
+        $begin_port = $port;
+        $code_sever_port = $port + 1;
+        $no_use_port_begin = $port + 2;
+        $no_use_end_port =  max($code_sever_port, $port + $port_num - 1);
+        $shell = "echo -e '$password\\n$password' | sudo passwd ltpp;sudo service ssh restart;rm -rf /path;mkdir -p /path/to;touch /path/to/config.yaml;echo password: $password >> /path/to/config.yaml;nohup code-server --bind-addr=0.0.0.0:80 --config /path/to/config.yaml > /dev/null 2>&1 & tail -f /dev/null";
+        $docker_cmd = 'docker run --name ' . $name . ' -itd -p ' . $begin_port . ':22 -p ' . $code_sever_port . ':80 -p ' . $no_use_port_begin . '-' . $no_use_end_port . ':' .  $no_use_port_begin . '-' . $no_use_end_port . ' --restart=always --memory=2g --cpus=0.2 ccr.ccs.tencentyun.com/linux_environment/debian:1.0.0 /bin/bash -c "' . $shell . '" 2>&1';
+        exec($docker_cmd, $out);
+        if (empty($out) || sizeof($out) != 1 || !$this->isEnglishAlphabet($out[0])) {
+            exec('docker rm -f ' . $name . ' 2>&1');
             return [
-                'code' => -1,
+                'code' => 0,
                 'title' => Index::$title,
-                'content' => Index::$failed_to_create_or_run_service_msg . "\n" . $e->getMessage()
+                'content' => Index::$failed_to_create_service_msg
             ];
         }
         return [
@@ -201,9 +142,11 @@ class Index
         $port = (int) $request->post('port') ?? 0;
         $password = $request->post('password') ?? '';
         $port_num = (int) $request->post('port_num') ?? 0;
+        $name = (int) $request->post('name') ?? '';
         if (
             !$port || !is_numeric($port) || $port <= 0 ||
             !$password ||
+            !$name ||
             !$port_num || !is_numeric($port_num) || $port_num < 2
         ) {
             return json([
@@ -212,7 +155,7 @@ class Index
                 'content' => Index::$parameter_error_msg
             ]);
         }
-        $res = $this->creat($port, $password, $port_num);
+        $res = $this->creat($port, $password, $port_num, $name);
         return json($res);
     }
 }

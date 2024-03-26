@@ -9,7 +9,9 @@
  * QQ:1491579574
  * Copyright (c) 2023 by SQS, All Rights Reserved. 
  */
+
 declare(strict_types=1);
+
 namespace app\middleware;
 
 use Webman\MiddlewareInterface;
