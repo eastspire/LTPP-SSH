@@ -23,6 +23,16 @@ class Index
     static $app_name = 'LTPP-SSH';
 
     /**
+     * 起始端口
+     */
+    static $start_port = 0;
+
+    /**
+     * 终止端口
+     */
+    static $end_port = 65535;
+
+    /**
      * 参数错误信息
      * @var string $parameter_error_msg
      */
@@ -126,6 +136,13 @@ class Index
     {
         try {
             for ($i = $port; $i < $port + $port_num; ++$i) {
+                if ($i < Index::$start_port || $i > Index::$end_port) {
+                    return [
+                        'code' => -1,
+                        'title' => Index::$title,
+                        'content' => Index::$port_error_msg
+                    ];
+                }
                 if ($this->judgePortIsUse($i)) {
                     return [
                         'code' => 0,
