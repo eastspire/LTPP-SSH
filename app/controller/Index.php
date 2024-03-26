@@ -139,16 +139,11 @@ class Index
      */
     public function index(Request $request)
     {
-        $port = (int) $request->post('port') ?? 0;
-        $password = $request->post('password') ?? '';
-        $port_num = (int) $request->post('port_num') ?? 0;
-        $name = (int) $request->post('name') ?? '';
-        if (
-            !$port || !is_numeric($port) || $port <= 0 ||
-            !$password ||
-            !$name ||
-            !$port_num || !is_numeric($port_num) || $port_num < 2
-        ) {
+        $port = (int)($request->post('port') ?? 0);
+        $name = (string)($request->post('name') ?? '');
+        $port_num = (int)($request->post('port_num') ?? 0);
+        $password = (string)($request->post('password') ?? '');
+        if (!$port || !$password || !$name || !$port_num) {
             return json([
                 'code' => -1,
                 'title' => Index::$title,
