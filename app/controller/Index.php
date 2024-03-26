@@ -82,6 +82,15 @@ class Index
     static $title = 'LTPP-SSH创建结果通知';
 
     /**
+     * 判断是否只包含数字和字母
+     */
+    private function isEnglishAlphabet($str)
+    {
+        return preg_match('/^[a-zA-Z0-9]+$/', $str);
+    }
+
+
+    /**
      * 判断端口是否占用
      * @param int $port
      * @return bool $res
@@ -113,7 +122,7 @@ class Index
      * @param int $port_num
      * @return array $res
      */
-    private function creat($port = 0, $password = '', $port_num)
+    private function creat($port = 0, $password = '', $port_num = 2)
     {
         try {
             for ($i = $port; $i < $port + $port_num; ++$i) {
@@ -128,8 +137,15 @@ class Index
             $begin_port = $port + 1;
             $end_port =  max($port + 1, $port + $port_num - 1);
             $shell = "echo -e '$password\\n$password' | sudo passwd ltpp;sudo service ssh restart;rm -rf /path;mkdir -p /path/to;touch /path/to/config.yaml;echo password: $password >> /path/to/config.yaml;nohup code-server --bind-addr=0.0.0.0:80 --config /path/to/config.yaml > /dev/null 2>&1 & tail -f /dev/null";
-            $docker_cmd = 'docker run -itd -p ' . $port . ':22 -p ' . ($port + 1) . ':80 -p ' . $begin_port . '-' . $end_port . ':' .  $begin_port . '-' . $end_port . ' --restart=always --memory=2g --cpus=0.2 ccr.ccs.tencentyun.com/linux_environment/debian:1.0.0 /bin/bash -c "' . $shell . '" 2>&1';
+            $docker_cmd = 'docker run -itd -p ' . $port . ':22 -p ' . $begin_port . ':80 -p ' . $begin_port . '-' . $end_port . ':' .  $begin_port . '-' . $end_port . ' --restart=always --memory=2g --cpus=0.2 ccr.ccs.tencentyun.com/linux_environment/debian:1.0.0 /bin/bash -c "' . $shell . '" 2>&1';
             exec($docker_cmd, $out);
+            if (empty($out) || sizeof($out) != 1 || !$this->isEnglishAlphabet($out[0])) {
+                return [
+                    'code' => -1,
+                    'title' => Index::$title,
+                    'content' => Index::$failed_to_create_service_msg
+                ];
+            }
             $is_success = false;
             for ($i = $port; $i < $port + $port_num; ++$i) {
                 if ($this->judgePortIsUse($i)) {
@@ -163,9 +179,9 @@ class Index
      */
     public function index(Request $request)
     {
-        $port = (int) $request->post('port');
-        $password = $request->post('password');
-        $port_num = (int)$request->post('port_num');
+        $port = (int) $request->post('port') ?? 0;
+        $password = $request->post('password') ?? '';
+        $port_num = (int) $request->post('port_num') ?? 0;
         if (
             !$port || !is_numeric($port) || $port <= 0 ||
             !$password ||
