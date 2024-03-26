@@ -173,7 +173,7 @@ class Index
             }
             if (!$is_success) {
                 return [
-                    'code' => -1,
+                    'code' => 0,
                     'title' => Index::$title,
                     'content' => Index::$failed_to_create_or_run_service_msg
                 ];
