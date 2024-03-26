@@ -134,10 +134,12 @@ class Index
                     ];
                 }
             }
-            $begin_port = $port + 1;
-            $end_port =  max($port + 1, $port + $port_num - 1);
+            $begin_port = $port;
+            $code_sever_port = $port + 1;
+            $no_use_port_begin = $port + 2;
+            $no_use_end_port =  max($port + 1, $port + $port_num - 1);
             $shell = "echo -e '$password\\n$password' | sudo passwd ltpp;sudo service ssh restart;rm -rf /path;mkdir -p /path/to;touch /path/to/config.yaml;echo password: $password >> /path/to/config.yaml;nohup code-server --bind-addr=0.0.0.0:80 --config /path/to/config.yaml > /dev/null 2>&1 & tail -f /dev/null";
-            $docker_cmd = 'docker run -itd -p ' . $port . ':22 -p ' . $begin_port . ':80 -p ' . $begin_port . '-' . $end_port . ':' .  $begin_port . '-' . $end_port . ' --restart=always --memory=2g --cpus=0.2 ccr.ccs.tencentyun.com/linux_environment/debian:1.0.0 /bin/bash -c "' . $shell . '" 2>&1';
+            $docker_cmd = 'docker run -itd -p ' . $begin_port . ':22 -p ' . $code_sever_port . ':80 -p ' . $no_use_port_begin . '-' . $no_use_end_port . ':' .  $no_use_port_begin . '-' . $no_use_end_port . ' --restart=always --memory=2g --cpus=0.2 ccr.ccs.tencentyun.com/linux_environment/debian:1.0.0 /bin/bash -c "' . $shell . '" 2>&1';
             exec($docker_cmd, $out);
             if (empty($out) || sizeof($out) != 1 || !$this->isEnglishAlphabet($out[0])) {
                 return [
