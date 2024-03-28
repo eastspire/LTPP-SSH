@@ -314,10 +314,10 @@ class Response
      * @param string $domain
      * @param bool $secure
      * @param bool $http_only
-     * @param bool $same_site
+     * @param string $same_site
      * @return $this
      */
-    public function cookie($name, $value = '', $max_age = null, $path = '', $domain = '', $secure = false, $http_only = false, $same_site  = false)
+    public function cookie($name, $value = '', $max_age = null, $path = '', $domain = '', $secure = false, $http_only = false, $same_site  = '')
     {
         $this->_header['Set-Cookie'][] = $name . '=' . \rawurlencode($value)
             . (empty($domain) ? '' : '; Domain=' . $domain)
@@ -427,7 +427,7 @@ class Response
         if (!isset($headers['Transfer-Encoding'])) {
             $head .= "Content-Length: $body_len\r\n\r\n";
         } else {
-            return "$head\r\n".dechex($body_len)."\r\n{$this->_body}\r\n";
+            return $body_len ? "$head\r\n" . dechex($body_len) . "\r\n{$this->_body}\r\n" : "$head\r\n";
         }
 
         // The whole http package

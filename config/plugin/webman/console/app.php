@@ -1,21 +1,21 @@
 <?php
+
 return [
     'enable' => true,
-
+    'custom_ini' => '
+        memory_limit=-1
+        upload_max_filesize=1024G
+        post_max_size=1024G
+        max_execution_time=0
+    ',
     'build_dir' => BASE_PATH . DIRECTORY_SEPARATOR . 'build',
-
     'phar_filename' => 'LTPP-SSH.phar',
-
     'bin_filename' => 'LTPP-SSH',
-
     'signature_algorithm' => Phar::SHA256,
     //set the signature algorithm for a phar and apply it. The signature algorithm must be one of Phar::MD5, Phar::SHA1, Phar::SHA256, Phar::SHA512, or Phar::OPENSSL.
-
     'private_key_file' => '',
     // The file path for certificate or OpenSSL private key file.
-
     'exclude_pattern' => '#^(?!.*(composer.json|/.github/|/.idea/|/.git/|/.setting/|/runtime/|/vendor-bin/|/build/|/Music/|/Frontend/|/public/|/.vscode|/.gitignore|/README.md))(.*)$#',
-
     'exclude_files' => [
         '.env',
         'LICENSE',
