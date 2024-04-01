@@ -3,7 +3,7 @@
         'name' => 'ltpp/ltpp-ssh',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '81cb1f3019edd56e1ed87774bd5af03343772373',
+        'reference' => 'e7008c491af4f5bd11bc29e10aef4b903d961e59',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -22,7 +22,7 @@
         'ltpp/ltpp-ssh' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '81cb1f3019edd56e1ed87774bd5af03343772373',
+            'reference' => 'e7008c491af4f5bd11bc29e10aef4b903d961e59',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
