@@ -7,7 +7,7 @@ use Webman\Exception\ExceptionHandler;
 use Webman\Http\Request;
 use Webman\Http\Response;
 use support\exception\BusinessException;
-use app\controller\Index;
+use app\controller\SSH;
 
 /**
  * Class Handler
@@ -30,7 +30,7 @@ class LTPPErrorHandler extends ExceptionHandler
             if (($exception instanceof BusinessException) && ($response = $exception->render($request))) {
                 return $response;
             }
-            $json = ['code' => -1, 'title' => Index::$title, 'content' => Index::$server_error];
+            $json = ['code' => -1, 'title' => SSH::$title, 'content' => SSH::$server_error];
         } catch (Throwable $e) {
         }
         return new Response(

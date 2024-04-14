@@ -15,12 +15,12 @@
 
 use Webman\Route;
 use Webman\Http\Request;
-use app\controller\Index;
+use app\controller\SSH;
 
 Route::fallback(function (Request $request) {
     $path = $request->path();
     $res = json_encode(
-        ['code' => -1, 'title' => Index::$title, 'content' => Index::$parameter_error_msg],
+        ['code' => -1, 'title' => SSH::$title, 'content' => SSH::$parameter_error_msg],
         JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
     );
     return response($res, 200, [
