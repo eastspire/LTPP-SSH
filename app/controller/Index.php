@@ -68,6 +68,54 @@ class Index
     static $failed_to_create_or_run_service_msg = '【LTPP-SSH】服务创建/运行失败！';
 
     /**
+     *  服务指定服务器关机失败
+     * @var string $failed_to_shutdown_service_msg
+     */
+    static $failed_to_shutdown_service_msg = '【LTPP-SSH】服务指定服务器关机失败！';
+
+    /**
+     *  服务指定服务器关机成功
+     * @var string $success_to_shutdown_service_msg
+     */
+    static $success_to_shutdown_service_msg = '【LTPP-SSH】服务指定服务器关机成功！';
+
+    /**
+     *  服务指定服务器开机失败
+     * @var string $failed_to_poweron_service_msg
+     */
+    static $failed_to_poweron_service_msg = '【LTPP-SSH】服务指定服务器开机失败！';
+
+    /**
+     *  服务指定服务器开机成功
+     * @var string $success_to_poweron_service_msg
+     */
+    static $success_to_poweron_service_msg = '【LTPP-SSH】服务指定服务器开机成功！';
+
+    /**
+     *  服务指定服务器重启失败
+     * @var string $failed_to_reboot_service_msg
+     */
+    static $failed_to_reboot_service_msg = '【LTPP-SSH】服务指定服务器重启失败！';
+
+    /**
+     *  服务指定服务器重启成功
+     * @var string $success_to_reboot_service_msg
+     */
+    static $success_to_reboot_service_msg = '【LTPP-SSH】服务指定服务器重启成功！';
+
+    /**
+     *  服务指定服务器删除失败
+     * @var string $failed_to_delete_service_msg
+     */
+    static $failed_to_delete_service_msg = '【LTPP-SSH】服务指定服务器删除失败！';
+
+    /**
+     *  服务指定服务器删除成功
+     * @var string $success_to_delete_service_msg
+     */
+    static $success_to_delete_service_msg = '【LTPP-SSH】服务指定服务器删除成功！';
+
+    /**
      * 服务运行异常
      * @var string $server_error
      */
@@ -137,7 +185,7 @@ class Index
      * SSH购买
      * @param Request $request
      */
-    public function index(Request $request)
+    public function buy(Request $request)
     {
         $port = (int)($request->post('port') ?? 0);
         $name = (string)($request->post('name') ?? '');
@@ -152,5 +200,101 @@ class Index
         }
         $res = $this->creat($port, $password, $port_num, $name);
         return json($res);
+    }
+
+    /**
+     * 关机
+     */
+    public function shutdown(Request $request)
+    {
+        $name = (string)($request->post('name') ?? '');
+        $docker_cmd = 'docker stop ' . $name;
+        $out = [];
+        exec($docker_cmd, $out);
+        if (empty($out) || sizeof($out) != 1 || !$this->isEnglishAlphabet($out[0])) {
+            exec('docker rm -f ' . $name . ' 2>&1');
+            return [
+                'code' => 0,
+                'title' => Index::$title,
+                'content' => Index::$failed_to_shutdown_service_msg
+            ];
+        }
+        return [
+            'code' => 1,
+            'title' => Index::$title,
+            'content' => Index::$success_to_shutdown_service_msg
+        ];
+    }
+
+    /**
+     * 开机
+     */
+    public function poweron(Request $request)
+    {
+        $name = (string)($request->post('name') ?? '');
+        $docker_cmd = 'docker start ' . $name;
+        $out = [];
+        exec($docker_cmd, $out);
+        if (empty($out) || sizeof($out) != 1 || !$this->isEnglishAlphabet($out[0])) {
+            exec('docker rm -f ' . $name . ' 2>&1');
+            return [
+                'code' => 0,
+                'title' => Index::$title,
+                'content' => Index::$failed_to_poweron_service_msg
+            ];
+        }
+        return [
+            'code' => 1,
+            'title' => Index::$title,
+            'content' => Index::$success_to_poweron_service_msg
+        ];
+    }
+
+    /**
+     * 重启
+     */
+    public function reboot(Request $request)
+    {
+        $name = (string)($request->post('name') ?? '');
+        $docker_cmd = 'docker restart ' . $name;
+        $out = [];
+        exec($docker_cmd, $out);
+        if (empty($out) || sizeof($out) != 1 || !$this->isEnglishAlphabet($out[0])) {
+            exec('docker rm -f ' . $name . ' 2>&1');
+            return [
+                'code' => 0,
+                'title' => Index::$title,
+                'content' => Index::$failed_to_reboot_service_msg
+            ];
+        }
+        return [
+            'code' => 1,
+            'title' => Index::$title,
+            'content' => Index::$success_to_reboot_service_msg
+        ];
+    }
+
+    /**
+     * 删除
+     */
+    public function delete(Request $request)
+    {
+        $name = (string)($request->post('name') ?? '');
+        $docker_cmd = 'docker rm -f ' . $name;
+        $out = [];
+        exec($docker_cmd, $out);
+        if (empty($out) || sizeof($out) != 1 || !$this->isEnglishAlphabet($out[0])) {
+            exec('docker rm -f ' . $name . ' 2>&1');
+            return [
+                'code' => 0,
+                'title' => Index::$title,
+                'content' => Index::$failed_to_delete_service_msg
+            ];
+        }
+        return [
+            'code' => 1,
+            'title' => Index::$title,
+            'content' => Index::$success_to_delete_service_msg
+        ];
     }
 }
