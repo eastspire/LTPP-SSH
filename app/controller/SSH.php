@@ -117,6 +117,48 @@ class SSH
     static $success_to_delete_service_msg = '【LTPP-SSH】服务指定服务器删除成功！';
 
     /**
+     *  服务指定服务器重置失败
+     * @var string $failed_to_reset_service_msg
+     */
+    static $failed_to_reset_service_msg = '【LTPP-SSH】服务指定服务器重置失败！';
+
+    /**
+     *  服务指定服务器重置成功
+     * @var string $success_to_reset_service_msg
+     */
+    static $success_to_reset_service_msg = '【LTPP-SSH】服务指定服务器重置成功！';
+
+    /**
+     *  服务指定服务器回滚失败
+     * @var string $failed_to_back_image_service_msg
+     */
+    static $failed_to_back_image_service_msg = '【LTPP-SSH】服务指定服务器回滚失败！';
+
+    /**
+     *  服务指定服务器回滚快照文件不存在
+     * @var string $no_back_image_file_service_msg
+     */
+    static $no_back_image_file_service_msg = '【LTPP-SSH】服务指定服务器快照文件不存在！';
+
+    /**
+     *  服务指定服务器回滚成功
+     * @var string $success_to_back_image_service_msg
+     */
+    static $success_to_back_image_service_msg = '【LTPP-SSH】服务指定服务器回滚成功！';
+
+    /**
+     *  服务指定服务器快照创建成功
+     * @var string $success_to_create_image_service_msg
+     */
+    static $success_to_create_image_service_msg = '【LTPP-SSH】服务指定服务器快照创建成功！';
+
+    /**
+     *  服务指定服务器快照创建失败
+     * @var string $fail_to_create_image_service_msg
+     */
+    static $fail_to_create_image_service_msg = '【LTPP-SSH】服务指定服务器快照创建失败！';
+
+    /**
      * 服务运行异常
      * @var string $server_error
      */
@@ -132,6 +174,105 @@ class SSH
      * @var int $title
      */
     static $title = '【LTPP-SSH】运行结果';
+
+    /**
+     * 快照保存目录
+     * @var string $image_save_path
+     */
+    static $image_save_path = '/home/IMAGE/';
+
+    /**
+     * 默认快照
+     */
+    static $default_image_name = 'ccr.ccs.tencentyun.com/linux_environment/debian:1.0.0';
+
+    /**
+     * 版本
+     */
+    static $default_image_version = '1.0.0';
+
+    /**
+     * 判断路径是否存在（路径以/开头），不存在创建路径中的文件夹
+     * @param string $path 路径
+     * @param int $grade 权限
+     */
+    static public function judgeCreatPath($path, $grade = 0666)
+    {
+        if (file_exists($path)) {
+            return true;
+        }
+        $name = [];
+        $length = strlen($path);
+        // 获取全部名称
+        for ($i = 0; $i < $length; ++$i) {
+            if ($path[$i] == '/') {
+                $tem = '';
+                for ($j = $i + 1; $j < $length; ++$j) {
+                    if ($path[$j] == '/') {
+                        $i = $j - 1;
+                        break;
+                    }
+                    $tem .= $path[$j];
+                    if ($j == $length - 1) {
+                        $i = $j;
+                        break;
+                    }
+                }
+                if ($tem != '') {
+                    $name[] = $tem;
+                }
+            }
+        }
+        $now_path = '/';
+        foreach ($name as &$tem) {
+            $now_path .= $tem . '/';
+            $isfile = strripos($now_path, '.');
+            if (!file_exists($now_path) && $isfile === false && !is_dir($now_path)) {
+                try {
+                    @mkdir($now_path, $grade, true);
+                } catch (Exception $e) {
+                    continue;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 文件（夹）删除
+     * @param string $dir 文件路径
+     * @return bool $res 删除是否成功
+     */
+    private function deleteAllFile($dir)
+    {
+        //其他文件夹不可删除
+        if (strripos($dir, SSH::$image_save_path) === false) {
+            return false;
+        }
+        try {
+            if (!file_exists($dir)) {
+                return false;
+            }
+            if ($dir == '.' || $dir == '..') {
+                return false;
+            }
+            if (!is_dir($dir)) {
+                @unlink("$dir");
+                return true;
+            }
+            $handle = opendir($dir);
+            while (($file = readdir($handle)) !== false) {
+                if ($file != '.' && $file != '..') {
+                    SSH::deleteAllFile("$dir/$file");
+                }
+            }
+            closedir($handle);
+            @rmdir($dir);
+        } catch (Exception $e) {
+            return false;
+        }
+        return true;
+    }
 
     /**
      * 判断是否只包含数字和字母
@@ -188,17 +329,28 @@ class SSH
         }
     }
 
-
     /**
      * 创建SSH
      * @param int $port
      * @param string $password
      * @param int $port_num
      * @param string $name
+     * @param string $success_msg
+     * @param string $fail_msg
+     * @param string $image_name
      * @return array $res
      */
-    private function creat($port = 0, $password = '', $port_num = 2, $name = '')
+    private function creat($port = 0, $password = '', $port_num = 2, $name = '',  $success_msg = '', $fail_msg = '', $image_name = '')
     {
+        if (!$fail_msg) {
+            $fail_msg = SSH::$failed_to_create_service_msg;
+        }
+        if (!$success_msg) {
+            $success_msg = SSH::$success_to_create_service_msg;
+        }
+        if (!$image_name) {
+            $image_name = SSH::$default_image_name;
+        }
         for ($i = $port; $i < $port + $port_num; ++$i) {
             if ($i < SSH::$start_port || $i > SSH::$end_port) {
                 return [
@@ -213,7 +365,7 @@ class SSH
         $no_use_port_begin = $port + 2;
         $no_use_end_port = max($code_sever_port, $port + $port_num - 1);
         $shell = "echo -e '$password\\n$password' | sudo passwd ltpp;sudo service ssh restart;rm -rf /path;mkdir -p /path/to;touch /path/to/config.yaml;echo password: $password >> /path/to/config.yaml;nohup code-server --bind-addr=0.0.0.0:80 --config /path/to/config.yaml > /dev/null 2>&1 & tail -f /dev/null";
-        $docker_cmd = 'docker run --name ' . $name . ' -itd -p ' . $begin_port . ':22 -p ' . $code_sever_port . ':80 -p ' . $no_use_port_begin . '-' . $no_use_end_port . ':' .  $no_use_port_begin . '-' . $no_use_end_port . ' --restart=always --init --memory=2g --cpus=0.2 ccr.ccs.tencentyun.com/linux_environment/debian:1.0.0 /bin/bash -c "' . $shell . '" 2>&1';
+        $docker_cmd = 'docker run --name ' . $name . ' -itd -p ' . $begin_port . ':22 -p ' . $code_sever_port . ':80 -p ' . $no_use_port_begin . '-' . $no_use_end_port . ':' .  $no_use_port_begin . '-' . $no_use_end_port . ' --restart=always --init --memory=2g --cpus=0.2 ' . $image_name . ' /bin/bash -c "' . $shell . '" 2>&1';
         $out = '';
         $this->runExec($docker_cmd, $out);
         if (!$out || !$this->isEnglishAlphabet($out)) {
@@ -221,13 +373,13 @@ class SSH
             return [
                 'code' => 0,
                 'title' => SSH::$title,
-                'content' => SSH::$failed_to_create_service_msg
+                'content' => $fail_msg
             ];
         }
         return [
             'code' => 1,
             'title' => SSH::$title,
-            'content' => SSH::$success_to_create_service_msg
+            'content' => $success_msg
         ];
     }
 
@@ -248,7 +400,7 @@ class SSH
                 'content' => SSH::$parameter_error_msg
             ]);
         }
-        $res = $this->creat($port, $password, $port_num, $name);
+        $res = $this->creat($port, $password, $port_num, $name, SSH::$success_to_create_service_msg, SSH::$failed_to_create_service_msg, SSH::$default_image_name);
         return json($res);
     }
 
@@ -263,7 +415,7 @@ class SSH
         $this->runExec($docker_cmd, $out);
         if (!$out || !$this->isEnglishAlphabet($out)) {
             return json([
-                'code' => 0,
+                'code' => -1,
                 'title' => SSH::$title,
                 'content' => SSH::$failed_to_shutdown_service_msg
             ]);
@@ -286,7 +438,7 @@ class SSH
         $this->runExec($docker_cmd, $out);
         if (!$out || !$this->isEnglishAlphabet($out)) {
             return json([
-                'code' => 0,
+                'code' => -1,
                 'title' => SSH::$title,
                 'content' => SSH::$failed_to_poweron_service_msg
             ]);
@@ -309,7 +461,7 @@ class SSH
         $this->runExec($docker_cmd, $out);
         if (!$out || !$this->isEnglishAlphabet($out)) {
             return json([
-                'code' => 0,
+                'code' => -1,
                 'title' => SSH::$title,
                 'content' => SSH::$failed_to_reboot_service_msg
             ]);
@@ -327,20 +479,119 @@ class SSH
     public function delete(Request $request)
     {
         $name = (string)($request->post('name') ?? '');
+        $image_name = $name . ':' . SSH::$default_image_version;
+        // 删除容器
         $docker_cmd = 'docker rm -f ' . $name;
         $out = '';
         $this->runExec($docker_cmd, $out);
-        if (!$out || !$this->isEnglishAlphabet($out)) {
-            return json([
-                'code' => 0,
-                'title' => SSH::$title,
-                'content' => SSH::$failed_to_delete_service_msg
-            ]);
-        }
+        // 删除快照
+        $out = '';
+        $docker_cmd = 'docker rmi -f ' . $image_name;
+        $this->runExec($docker_cmd, $out);
+        // 删除快照文件
+        $out = '';
+        $image_path = SSH::$image_save_path . $name . '.tar';
+        $this->deleteAllFile($image_path);
         return json([
             'code' => 1,
             'title' => SSH::$title,
             'content' => SSH::$success_to_delete_service_msg
         ]);
+    }
+
+    /**
+     * 创建快照
+     */
+    public function creatImage(Request $request)
+    {
+        $name = (string)($request->post('name') ?? '');
+        // 创建快照目录
+        SSH::judgeCreatPath(SSH::$image_save_path);
+        // 删除快照文件
+        $image_path = SSH::$image_save_path . $name . '.tar';
+        $this->deleteAllFile($image_path);
+        // 打包当前镜像
+        $docker_cmd = 'docker export ' . $name . ' > ' . $image_path;
+        $out = '';
+        $this->runExec($docker_cmd, $out);
+        return json([
+            'code' => 1,
+            'title' => SSH::$title,
+            'content' => SSH::$success_to_create_image_service_msg
+        ]);
+    }
+
+    /**
+     * 回滚快照
+     */
+    public function backLastImage(Request $request)
+    {
+        $port = (int)($request->post('port') ?? 0);
+        $name = (string)($request->post('name') ?? '');
+        $port_num = (int)($request->post('port_num') ?? 0);
+        $password = (string)($request->post('password') ?? '');
+        if (!$port || !$password || !$name || !$port_num) {
+            return json([
+                'code' => -1,
+                'title' => SSH::$title,
+                'content' => SSH::$parameter_error_msg
+            ]);
+        }
+        // 无历史快照则返回
+        $image_path = SSH::$image_save_path . $name . '.tar';
+        if (!file_exists($image_path)) {
+            return json([
+                'code' => -1,
+                'title' => SSH::$title,
+                'content' => SSH::$no_back_image_file_service_msg
+            ]);
+        }
+        // 删除容器
+        $out = '';
+        $docker_cmd = 'docker rm -f ' . $name;
+        $this->runExec($docker_cmd, $out);
+        // 删除快照
+        $out = '';
+        $docker_cmd = 'docker rmi -f ' . $name . ':' . SSH::$default_image_version;
+        $this->runExec($docker_cmd, $out);
+        // 重新加载历史快照
+        $out = '';
+        $new_image_name = $name . ':' . SSH::$default_image_version;
+        $docker_cmd = 'docker import ' . SSH::$image_save_path . $name . '.tar ' .  $new_image_name;
+        $this->runExec($docker_cmd, $out);
+        // 创建容器
+        $res = $this->creat($port, $password, $port_num, $name, SSH::$success_to_back_image_service_msg, SSH::$failed_to_back_image_service_msg, $new_image_name);
+        return json($res);
+    }
+
+    /**
+     * 重置快照
+     */
+    public function resetImage(Request $request)
+    {
+        $port = (int)($request->post('port') ?? 0);
+        $name = (string)($request->post('name') ?? '');
+        $port_num = (int)($request->post('port_num') ?? 0);
+        $password = (string)($request->post('password') ?? '');
+        if (!$port || !$password || !$name || !$port_num) {
+            return json([
+                'code' => -1,
+                'title' => SSH::$title,
+                'content' => SSH::$parameter_error_msg
+            ]);
+        }
+        // 重置快照
+        $docker_cmd = 'docker rm -f ' . $name;
+        $out = '';
+        $this->runExec($docker_cmd, $out);
+        if (!$out || !$this->isEnglishAlphabet($out)) {
+            return json([
+                'code' => -1,
+                'title' => SSH::$title,
+                'content' => SSH::$failed_to_reset_service_msg
+            ]);
+        }
+        $res = $this->creat($port, $password, $port_num, $name, SSH::$success_to_reset_service_msg, SSH::$failed_to_reset_service_msg, SSH::$default_image_name);
+        return json($res);
     }
 }
