@@ -33,6 +33,11 @@ class SSH
     static $end_port = 65535;
 
     /**
+     * 最小使用端口
+     */
+    static $min_use_port_num = 2;
+
+    /**
      * 参数错误信息
      * @var string $parameter_error_msg
      */
@@ -334,17 +339,32 @@ class SSH
      * @param int $port
      * @param string $password
      * @param int $port_num
+     * @param int $cpu
+     * @param int $memory
      * @param string $name
      * @param string $success_msg
      * @param string $fail_msg
      * @param string $image_name
      * @return array $res
      */
-    private function creat($port = 0, $password = '', $port_num = 2, $name = '',  $success_msg = '', $fail_msg = '', $image_name = '')
+    private function creat($port = 0, $password = '', $port_num = 2, $cpu = 0, $memory = 0, $name = '',  $success_msg = '', $fail_msg = '', $image_name = '')
     {
         if (!$fail_msg) {
             $fail_msg = SSH::$failed_to_create_service_msg;
         }
+        if (
+            !$port || !is_numeric($port) ||
+            !$port_num || !is_numeric($port_num) ||
+            !$cpu || !is_numeric($cpu)  ||
+            !$memory || !is_numeric($memory)
+        ) {
+            return [
+                'code' => -1,
+                'title' => SSH::$title,
+                'content' => $fail_msg
+            ];
+        }
+        $port_num = max(SSH::$min_use_port_num, $port_num);
         if (!$success_msg) {
             $success_msg = SSH::$success_to_create_service_msg;
         }
@@ -365,7 +385,7 @@ class SSH
         $no_use_port_begin = $port + 2;
         $no_use_end_port = max($code_sever_port, $port + $port_num - 1);
         $shell = "echo -e '$password\\n$password' | sudo passwd ltpp;sudo service ssh restart;rm -rf /path;mkdir -p /path/to;touch /path/to/config.yaml;echo password: $password >> /path/to/config.yaml;nohup code-server --bind-addr=0.0.0.0:80 --config /path/to/config.yaml > /dev/null 2>&1 & tail -f /dev/null";
-        $docker_cmd = 'docker run --name ' . $name . ' -itd -p ' . $begin_port . ':22 -p ' . $code_sever_port . ':80 -p ' . $no_use_port_begin . '-' . $no_use_end_port . ':' .  $no_use_port_begin . '-' . $no_use_end_port . ' --restart=always --init --memory=2g --cpus=0.2 ' . $image_name . ' /bin/bash -c "' . $shell . '" 2>&1';
+        $docker_cmd = 'docker run --name ' . $name . ' -itd -p ' . $begin_port . ':22 -p ' . $code_sever_port . ':80 -p ' . $no_use_port_begin . '-' . $no_use_end_port . ':' .  $no_use_port_begin . '-' . $no_use_end_port . ' --restart=always --init --memory=' . $memory . 'g --cpus=' . $cpu . ' ' . $image_name . ' /bin/bash -c "' . $shell . '" 2>&1';
         $out = '';
         $this->runExec($docker_cmd, $out);
         if (!$out || !$this->isEnglishAlphabet($out)) {
@@ -393,14 +413,17 @@ class SSH
         $name = (string)($request->post('name') ?? '');
         $port_num = (int)($request->post('port_num') ?? 0);
         $password = (string)($request->post('password') ?? '');
-        if (!$port || !$password || !$name || !$port_num) {
+        $cpu = (string)($request->post('cpu') ?? 0);
+        $memory = (string)($request->post('memory') ?? 0);
+        if (!$port || !$password || !$name || !$port_num || !$cpu || !$memory || !is_numeric($port) || !is_numeric($port_num) || !is_numeric($cpu) || !is_numeric($memory)) {
             return json([
                 'code' => -1,
                 'title' => SSH::$title,
                 'content' => SSH::$parameter_error_msg
             ]);
         }
-        $res = $this->creat($port, $password, $port_num, $name, SSH::$success_to_create_service_msg, SSH::$failed_to_create_service_msg, SSH::$default_image_name);
+        $port_num = max(SSH::$min_use_port_num, $port_num);
+        $res = $this->creat($port, $password, $port_num, $cpu, $memory, $name, SSH::$success_to_create_service_msg, SSH::$failed_to_create_service_msg, SSH::$default_image_name);
         return json($res);
     }
 
@@ -530,13 +553,16 @@ class SSH
         $name = (string)($request->post('name') ?? '');
         $port_num = (int)($request->post('port_num') ?? 0);
         $password = (string)($request->post('password') ?? '');
-        if (!$port || !$password || !$name || !$port_num) {
+        $cpu = (string)($request->post('cpu') ?? 0);
+        $memory = (string)($request->post('memory') ?? 0);
+        if (!$port || !$password || !$name || !$port_num || !$cpu || !$memory || !is_numeric($port) || !is_numeric($port_num) || !is_numeric($cpu) || !is_numeric($memory)) {
             return json([
                 'code' => -1,
                 'title' => SSH::$title,
                 'content' => SSH::$parameter_error_msg
             ]);
         }
+        $port_num = max(SSH::$min_use_port_num, $port_num);
         // 无历史快照则返回
         $image_path = SSH::$image_save_path . $name . '.tar';
         if (!file_exists($image_path)) {
@@ -560,7 +586,7 @@ class SSH
         $docker_cmd = 'docker import ' . SSH::$image_save_path . $name . '.tar ' .  $new_image_name;
         $this->runExec($docker_cmd, $out);
         // 创建容器
-        $res = $this->creat($port, $password, $port_num, $name, SSH::$success_to_back_image_service_msg, SSH::$failed_to_back_image_service_msg, $new_image_name);
+        $res = $this->creat($port, $password, $port_num, $cpu, $memory, $name, SSH::$success_to_back_image_service_msg, SSH::$failed_to_back_image_service_msg, $new_image_name);
         return json($res);
     }
 
@@ -573,13 +599,17 @@ class SSH
         $name = (string)($request->post('name') ?? '');
         $port_num = (int)($request->post('port_num') ?? 0);
         $password = (string)($request->post('password') ?? '');
-        if (!$port || !$password || !$name || !$port_num) {
+        $cpu = (string)($request->post('cpu') ?? 0);
+        $memory = (string)($request->post('memory') ?? 0);
+
+        if (!$port || !$password || !$name || !$port_num || !$cpu || !$memory || !is_numeric($port) || !is_numeric($port_num) || !is_numeric($cpu) || !is_numeric($memory)) {
             return json([
                 'code' => -1,
                 'title' => SSH::$title,
                 'content' => SSH::$parameter_error_msg
             ]);
         }
+        $port_num = max(SSH::$min_use_port_num, $port_num);
         // 重置快照
         $docker_cmd = 'docker rm -f ' . $name;
         $out = '';
@@ -591,7 +621,7 @@ class SSH
                 'content' => SSH::$failed_to_reset_service_msg
             ]);
         }
-        $res = $this->creat($port, $password, $port_num, $name, SSH::$success_to_reset_service_msg, SSH::$failed_to_reset_service_msg, SSH::$default_image_name);
+        $res = $this->creat($port, $password, $port_num, $cpu, $memory, $name, SSH::$success_to_reset_service_msg, SSH::$failed_to_reset_service_msg, SSH::$default_image_name);
         return json($res);
     }
 }
