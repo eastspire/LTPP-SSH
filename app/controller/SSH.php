@@ -23,6 +23,11 @@ class SSH
     static $app_name = 'LTPP-SSH';
 
     /**
+     * 开机脚本位置
+     */
+    static $start_shell_path = '/shell/start.sh';
+
+    /**
      * 起始端口
      */
     static $start_port = 0;
@@ -384,7 +389,16 @@ class SSH
         $code_sever_port = $port + 1;
         $no_use_port_begin = $port + 2;
         $no_use_end_port = max($code_sever_port, $port + $port_num - 1);
-        $shell = "echo -e '$password\\n$password' | sudo passwd ltpp;sudo service ssh restart;rm -rf /path;mkdir -p /path/to;touch /path/to/config.yaml;echo password: $password >> /path/to/config.yaml;nohup code-server --bind-addr=0.0.0.0:80 --config /path/to/config.yaml > /dev/null 2>&1 & tail -f /dev/null";
+        $shell = 'echo -e \'' . $password . '\n' . $password . '\' | sudo passwd ltpp;' .
+            'sudo service ssh restart;' .
+            'rm -rf /path;' .
+            'mkdir -p /path/to;' .
+            'touch /path/to/config.yaml;' .
+            'echo password: ' . $password . ' >> /path/to/config.yaml;' .
+            'nohup code-server --bind-addr=0.0.0.0:80 --config /path/to/config.yaml > /dev/null 2>&1 & ' .
+            'nohup chmod 777 ' . SSH::$start_shell_path . ' > /dev/null 2>&1 & ' .
+            'nohup ' . SSH::$start_shell_path . ' > /dev/null 2>&1 & ' .
+            'tail -f /dev/null';
         $docker_cmd = 'docker run --name ' . $name . ' -itd -p ' . $begin_port . ':22 -p ' . $code_sever_port . ':80 -p ' . $no_use_port_begin . '-' . $no_use_end_port . ':' .  $no_use_port_begin . '-' . $no_use_end_port . ' --restart=always --init --memory=' . $memory . 'g --cpus=' . $cpu . ' ' . $image_name . ' /bin/bash -c "' . $shell . '" 2>&1';
         $out = '';
         $this->runExec($docker_cmd, $out);
