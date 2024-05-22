@@ -613,8 +613,8 @@ class SSH
         $name = (string)($request->post('name') ?? '');
         $port_num = (int)($request->post('port_num') ?? 0);
         $password = (string)($request->post('password') ?? '');
-        $cpu = (string)($request->post('cpu') ?? 0);
-        $memory = (string)($request->post('memory') ?? 0);
+        $cpu = (float)($request->post('cpu') ?? 0);
+        $memory = (float)($request->post('memory') ?? 0);
 
         if (!$port || !$password || !$name || !$port_num || !$cpu || !$memory || !is_numeric($port) || !is_numeric($port_num) || !is_numeric($cpu) || !is_numeric($memory)) {
             return json([
