@@ -389,6 +389,22 @@ class SSH
         $code_sever_port = $port + 1;
         $no_use_port_begin = $port + 2;
         $no_use_end_port = max($code_sever_port, $port + $port_num - 1);
+        $out = '';
+        $rm_network_shell = 'docker network rm ' . $name . ' > /dev/null 2>&1';
+        $this->runExec($rm_network_shell, $out);
+        $out = '';
+        $creat_network_shell = 'docker network create ' . $name;
+        $this->runExec($creat_network_shell, $out);
+        if (!$out || !$this->isEnglishAlphabet($out)) {
+            $out = '';
+            $this->runExec($rm_network_shell, $out);
+            return [
+                'code' => 0,
+                'title' => SSH::$title,
+                'content' => $fail_msg
+            ];
+        }
+        $out = '';
         $shell = 'echo -e \'' . $password . '\n' . $password . '\' | sudo passwd ltpp;' .
             'sudo service ssh restart;' .
             'rm -rf /path;' .
@@ -399,7 +415,7 @@ class SSH
             'nohup chmod 777 ' . SSH::$start_shell_path . ' > /dev/null 2>&1 & ' .
             'nohup ' . SSH::$start_shell_path . ' > /dev/null 2>&1 & ' .
             'tail -f /dev/null';
-        $docker_cmd = 'docker run --name ' . $name . ' -itd -p ' . $begin_port . ':22 -p ' . $code_sever_port . ':80 -p ' . $no_use_port_begin . '-' . $no_use_end_port . ':' .  $no_use_port_begin . '-' . $no_use_end_port . ' --restart=always --init --memory=' . $memory . 'g --cpus=' . $cpu . ' ' . $image_name . ' /bin/bash -c "' . $shell . '" 2>&1';
+        $docker_cmd = 'docker run --name ' . $name . ' --network ' . $name . ' -itd -p ' . $begin_port . ':22 -p ' . $code_sever_port . ':80 -p ' . $no_use_port_begin . '-' . $no_use_end_port . ':' .  $no_use_port_begin . '-' . $no_use_end_port . ' --restart=always --init --memory=' . $memory . 'g --cpus=' . $cpu . ' ' . $image_name . ' /bin/bash -c "' . $shell . '" 2>&1';
         $out = '';
         $this->runExec($docker_cmd, $out);
         if (!$out || !$this->isEnglishAlphabet($out)) {
