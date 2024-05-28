@@ -1,5 +1,5 @@
-# LTPP-SSH
-> 说明
-- 服务端口：49999
-- 已关闭root远程登陆
-- root密码：ltpp
+# LTPP 宇宙文档
+
+> [GITHUB 静态页](https://ltpp-system.github.io/ltpp-docs/LTPP-SHARE/online-vscode.html)
+
+> [LTPP-GITLAB 静态页](https://root.pages.ltpp.vip/ltpp-docs/LTPP-SHARE/online-vscode.html)
