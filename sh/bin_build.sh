@@ -1,14 +1,11 @@
 #!/bin/bash
-###
- # @Author: 18855190718 1491579574@qq.com
- # @Date: 2023-08-22 13:31:27
- # @LastEditors: 18855190718 1491579574@qq.com
- # @LastEditTime: 2023-08-24 18:33:06
- # @FilePath: \LTPP-CODE\bin_build.sh
- # @Description: Email:1491579574@qq.com
- # QQ:1491579574
- # Copyright (c) 2023 by SQS, All Rights Reserved. 
-###
+# Build the LTPP-SSH single-file binary.
+#
+# Requires PHP 8.2 with phar.readonly=0 on the build host.
+# The previous version embedded operator contact details in the
+# comment header; that has been removed because the script ships in
+# the public repository.
+set -e
 php webman build:bin 8.2
 php webman build:bin 8.2
 ./sh/bin_up.sh
